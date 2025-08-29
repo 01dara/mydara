@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ECM Shop — Admin & Client (Self-Contained)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --card:#ffffff;--bg:#f6f7fb;--text:#111827;--muted:#6b7280;
+    --brand:#2563eb;--brand2:#7c3aed;
+  }
+  body{background:var(--bg);color:var(--text)}
+  .card{background:var(--card)}
+  .btn{display:inline-flex;align-items:center;gap:.45rem;border-radius:9999px;
+       padding:.5rem .85rem;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.08);
+       transition:transform .06s ease,opacity .2s;font-size:.92rem}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand2));color:white}
+  .btn-soft{background:rgba(99,102,241,.12);color:var(--text)}
+  .btn-danger{background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff}
+  .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+  .btn-warning{background:linear-gradient(135deg,#f59e0b,#d97706);color:#111827}
+  .btn-ghost{background:transparent;border:1px dashed #c7c9d1}
+  .tag{padding:.15rem .5rem;border-radius:.6rem;font-size:.75rem}
+  .tag-paid{background:rgba(16,185,129,.15);color:#10b981}
+  .tag-unpaid{background:rgba(239,68,68,.15);color:#ef4444}
+  .thumb{ width:96px; height:96px; object-fit:cover; border-radius:.6rem; cursor:zoom-in; border:1px solid #e5e7eb }
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:60}
+  .lightbox img{max-width:92vw;max-height:92vh;border-radius:1rem;border:4px solid #fff}
+  .tbl th{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase}
+  .bg-a{background:linear-gradient(120deg,#f8fafc,#eef2ff)}
+  .bg-b{background:linear-gradient(120deg,#fff7ed,#fef3c7)}
+  .bg-c{background:linear-gradient(120deg,#ecfeff,#e0f2fe)}
+  .bg-d{background:linear-gradient(120deg,#fdf4ff,#fae8ff)}
+  .bg-e{background:linear-gradient(120deg,#f0fdf4,#dcfce7)}
+</style>
+</head>
+<body class="min-h-screen bg-a">
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox"><img alt="preview" /></div>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b card/transparent backdrop-blur bg-white/70">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🛍️</span>
+        <h1 class="text-xl font-extrabold">ECM Shop</h1>
+        <span id="adminBadge" class="hidden ml-2 tag tag-paid">Admin</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <select id="bgSelect" class="px-2 py-2 rounded-full border bg-transparent">
+          <option value="bg-a">BG A</option>
+          <option value="bg-b">BG B</option>
+          <option value="bg-c">BG C</option>
+          <option value="bg-d">BG D</option>
+          <option value="bg-e">BG E</option>
+        </select>
+        <select id="langSelect" class="px-2 py-2 rounded-full border bg-transparent">
+          <option value="km">KH</option>
+          <option value="ko">KR</option>
+          <option value="en">EN</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 space-y-6">
+    <!-- Login -->
+    <section id="loginSection" class="card rounded-2xl p-5 shadow">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">🔐 <span data-i18n="admin_login">Admin Login</span></h2>
+      </div>
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="text-sm opacity-70" data-i18n="username">Username</label>
+          <input id="adminUser" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="admin" />
+        </div>
+        <div>
+          <label class="text-sm opacity-70" data-i18n="password">Password</label>
+          <input id="adminPass" type="password" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="admin123" />
+        </div>
+        <div class="flex items-end gap-2">
+          <button id="btnLogin" class="btn btn-primary w-full">🔑 <span data-i18n="login">Login</span></button>
+          <button id="btnLogout" class="btn btn-danger w-full hidden">🚪 <span data-i18n="logout">Logout</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sales Summary -->
+    <section class="card rounded-2xl p-5 shadow">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">📊 <span data-i18n="sales_summary">Sales Summary</span></h2>
+        <div id="summaryUpdated" class="text-sm text-gray-500"></div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="rounded-2xl p-4 border" style="background:linear-gradient(135deg,#ecfeff,#e0e7ff)">
+          <div class="text-xs opacity-70" data-i18n="total_orders">Total Orders</div>
+          <div id="sumOrders" class="text-2xl font-extrabold">0</div>
+        </div>
+        <div class="rounded-2xl p-4 border" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
+          <div class="text-xs opacity-70" data-i18n="items_sold">Items Sold</div>
+          <div id="sumItems" class="text-2xl font-extrabold">0</div>
+        </div>
+        <div class="rounded-2xl p-4 border" style="background:linear-gradient(135deg,#fff7ed,#ffedd5)">
+          <div class="text-xs opacity-70" data-i18n="gross_revenue">Gross Revenue</div>
+          <div id="sumGross" class="text-2xl font-extrabold">₩0</div>
+        </div>
+        <div class="rounded-2xl p-4 border" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff)">
+          <div class="text-xs opacity-70" data-i18n="delivery_total">Delivery Total</div>
+          <div id="sumDelivery" class="text-2xl font-extrabold">₩0</div>
+        </div>
+        <div class="rounded-2xl p-4 border" style="background:linear-gradient(135deg,#eef2ff,#e9d5ff)">
+          <div class="text-xs opacity-70" data-i18n="distinct_products">Distinct Products</div>
+          <div id="sumSKUs" class="text-2xl font-extrabold">0</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Products + Cart -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Products -->
+      <div class="space-y-4">
+        <div class="card rounded-2xl p-5 shadow">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold">🧺 <span data-i18n="products">Products</span></h2>
+            <div class="flex gap-2">
+              <button id="btnToggleEditor" class="btn btn-warning">✏️ <span data-i18n="show_hide_edit">Show / Hide Edit</span></button>
+            </div>
+          </div>
+          <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+        </div>
+
+        <!-- Editor (Admin only) -->
+        <div id="editorCard" class="card rounded-2xl p-5 shadow hidden">
+          <h3 class="text-base font-semibold mb-3">➕ <span data-i18n="new_edit_product">New / Edit Product</span></h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-sm opacity-70" data-i18n="name">Name</label>
+              <input id="fName" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="AirPods Pro" />
+            </div>
+            <div>
+              <label class="text-sm opacity-70" data-i18n="price">Price (₩)</label>
+              <input id="fPrice" type="number" min="0" step="1" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="120000" />
+            </div>
+            <div>
+              <label class="text-sm opacity-70" data-i18n="stock">Stock</label>
+              <input id="fStock" type="number" min="0" step="1" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="10" />
+            </div>
+            <div>
+              <label class="text-sm opacity-70" data-i18n="image_base64">Image (Upload → Base64)</label>
+              <input id="fImageFile" type="file" accept="image/*" class="w-full mt-1" />
+              <textarea id="fImage" class="w-full mt-2 h-24 px-3 py-2 rounded-xl border bg-transparent" placeholder="data:image/png;base64,..."></textarea>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button id="btnSaveProduct" class="btn btn-success">💾 <span data-i18n="save">Save</span></button>
+            <button id="btnResetForm" class="btn btn-soft">♻️ <span data-i18n="reset">Reset</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart -->
+      <div class="space-y-4">
+        <div class="card rounded-2xl p-5 shadow">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold">🛒 <span data-i18n="cart">Cart</span></h2>
+            <div class="flex gap-2">
+              <button id="btnClearCart" class="btn btn-danger">🧹 <span data-i18n="clear_cart">Clear</span></button>
+              <button id="btnCheckout" class="btn btn-primary">💳 <span data-i18n="checkout">Checkout</span></button>
+            </div>
+          </div>
+
+          <!-- Cart search -->
+          <div class="flex gap-2 mb-3">
+            <input id="cartSearch" class="flex-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="🔍 Search in cart" />
+            <button id="btnCartSearch" class="btn btn-soft">🔎 <span data-i18n="search">Search</span></button>
+            <button id="btnCartSearchReset" class="btn btn-ghost">♻️ <span data-i18n="reset">Reset</span></button>
+          </div>
+
+          <div id="cartList" class="space-y-3"></div>
+
+          <div class="mt-4 grid md:grid-cols-3 gap-3">
+            <div>
+              <label class="text-sm opacity-70" data-i18n="cust_name">Customer Name</label>
+              <input id="custName" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="ឈ្មោះ" />
+            </div>
+            <div>
+              <label class="text-sm opacity-70" data-i18n="cust_phone">Phone</label>
+              <input id="custPhone" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="012345678" />
+            </div>
+            <div>
+              <label class="text-sm opacity-70" data-i18n="cust_date">Date</label>
+              <input id="custDate" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" />
+            </div>
+          </div>
+
+          <!-- Delivery fee -->
+          <div class="mt-4 grid md:grid-cols-3 gap-3">
+            <div>
+              <label class="text-sm opacity-70" data-i18n="delivery_fee">Delivery Fee (₩)</label>
+              <input id="deliveryFee" type="number" min="0" step="1" class="w-full mt-1 px-3 py-2 rounded-xl border bg-transparent" placeholder="0" />
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center justify-between">
+            <div class="text-sm opacity-70" data-i18n="cart_note">Unlimited cart items. Click image to preview.</div>
+            <div class="text-right text-xl font-extrabold">
+              <div class="text-sm opacity-80" data-i18n="subtotal">Subtotal</div>
+              <div><span>₩</span><span id="cartSubtotal">0</span></div>
+              <div class="text-sm opacity-80" data-i18n="delivery_fee">Delivery Fee</div>
+              <div><span>₩</span><span id="cartDelivery">0</span></div>
+              <div class="mt-1" style="border-top:1px dashed #ddd"></div>
+              <div class="mt-1"><span class="opacity-70" data-i18n="grand_total">Grand Total</span> <span class="ml-2">₩</span><span id="cartTotal">0</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Orders -->
+    <section class="card rounded-2xl p-5 shadow">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h2 class="text-lg font-semibold">📜 <span data-i18n="order_history">Order History</span></h2>
+        <div class="flex items-center gap-2">
+          <input id="orderSearch" class="px-3 py-2 rounded-xl border bg-transparent" placeholder="🔍 Order ID / Product / Customer" />
+          <button id="btnResetSearch" class="btn btn-soft">♻️ <span data-i18n="reset">Reset</span></button>
+          <button id="btnClearOrders" class="btn btn-danger">🗑️ <span data-i18n="clear_orders">Clear Orders</span></button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full tbl">
+          <thead>
+            <tr class="text-left text-xs uppercase opacity-70">
+              <th class="py-2 pr-4" data-i18n="order_id">Order ID</th>
+              <th class="py-2 pr-4" data-i18n="date">Date</th>
+              <th class="py-2 pr-4" data-i18n="customer">Customer</th>
+              <th class="py-2 pr-4" data-i18n="items">Items</th>
+              <th class="py-2 pr-4" data-i18n="status">Status</th>
+              <th class="py-2 pr-4" data-i18n="delivery_fee">Delivery</th>
+              <th class="py-2 pr-4" data-i18n="total">Total</th>
+              <th class="py-2 pr-4" data-i18n="actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="orderRows" class="text-sm"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-between">
+        <div id="orderCountInfo" class="text-sm opacity-70"></div>
+        <div id="pager" class="flex flex-wrap gap-1"></div>
+      </div>
+    </section>
+  </main>
+
+<script>
+;(function(){
+  // ===== State =====
+  const S = {
+    lang: localStorage.getItem('ecm.lang') || 'km',
+    admin: JSON.parse(localStorage.getItem('ecm.admin')||'false'),
+    products: JSON.parse(localStorage.getItem('ecm.products')||'[]'),
+    cart: JSON.parse(localStorage.getItem('ecm.cart')||'[]'),
+    orders: JSON.parse(localStorage.getItem('ecm.orders')||'[]'),
+    pageSize: 8,
+    currentPage: 1,
+    search: '',
+    bg: localStorage.getItem('ecm.bg') || 'bg-a',
+    cartSearch: ''
+  };
+  function save(){
+    localStorage.setItem('ecm.lang', S.lang);
+    localStorage.setItem('ecm.admin', JSON.stringify(S.admin));
+    localStorage.setItem('ecm.products', JSON.stringify(S.products));
+    localStorage.setItem('ecm.cart', JSON.stringify(S.cart));
+    localStorage.setItem('ecm.orders', JSON.stringify(S.orders));
+    localStorage.setItem('ecm.bg', S.bg);
+  }
+  const KRW = new Intl.NumberFormat('ko-KR');
+  const q = s=>document.querySelector(s);
+  const ce=(t,c)=>{const e=document.createElement(t); if(c) e.className=c; return e;};
+
+  // ===== i18n =====
+  const T = {
+    km:{admin_login:'ចូលគណនីអ្នកគ្រប់គ្រង',username:'ឈ្មោះអ្នកប្រើ',password:'ពាក្យសម្ងាត់',login:'ចូល',logout:'ចេញ',sales_summary:'តារាងសង្ខេបការលក់',total_orders:'បញ្ជាទិញសរុប',items_sold:'បរិមាណលក់',gross_revenue:'ចំណូលសរុប',distinct_products:'ផលិតផលផ្សេងៗ',delivery_total:'សរុបសេវាដឹក',products:'ទំនិញ',show_hide_edit:'បង្ហាញ/លាក់ កែប្រែ',image_base64:'រូបភាព (Upload→Base64)',name:'ឈ្មោះ',price:'តម្លៃ (₩)',stock:'ស្តុក',actions:'សកម្មភាព',new_edit_product:'បន្ថែម/កែប្រែទំនិញ',save:'រក្សាទុក',reset:'កំណត់ឡើងវិញ',cart:'កន្ត្រក',clear_cart:'សម្អាត',checkout:'បញ្ជាទិញ',cust_name:'ឈ្មោះអតិថិជន',cust_phone:'លេខទូរស័ព្ទ',cust_date:'កាលបរិច្ឆេទ',status:'ស្ថានភាព',paid:'ទូទាត់រួច',unpaid:'មិនទាន់ទូទាត់',cart_note:'កន្ត្រកមិនកំណត់ ចុចលើរូបដើម្បីពង្រីក',order_history:'ប្រវត្តិបញ្ជាទិញ',order_id:'លេខបញ្ជាទិញ',date:'កាលបរិច្ឆេទ',customer:'អតិថិជន',items:'ទំនិញ',total:'សរុប',clear_orders:'លុបប្រវត្តិបញ្ជាទិញ',search:'ស្វែងរក',delivery_fee:'សេវាដឹក',subtotal:'សរុបរង',grand_total:'សរុបចុងក្រោយ',edit:'កែ',apply:'អនុវត្ត',cancel:'បោះបង់'},
+    ko:{admin_login:'관리자 로그인',username:'사용자 이름',password:'비밀번호',login:'로그인',logout:'로그아웃',sales_summary:'매출 요약',total_orders:'총 주문',items_sold:'판매 수량',gross_revenue:'총 매출',distinct_products:'상품 종류',delivery_total:'배송 총액',products:'상품',show_hide_edit:'편집 보이기/숨기기',image_base64:'이미지 (업로드→Base64)',name:'이름',price:'가격 (₩)',stock:'재고',actions:'작업',new_edit_product:'상품 추가/편집',save:'저장',reset:'초기화',cart:'장바구니',clear_cart:'비우기',checkout:'결제',cust_name:'고객 이름',cust_phone:'전화번호',cust_date:'날짜',status:'상태',paid:'결제 완료',unpaid:'미결제',cart_note:'장바구니 무제한. 이미지를 클릭해 미리보기',order_history:'주문 내역',order_id:'주문번호',date:'날짜',customer:'고객',items:'항목',total:'합계',clear_orders:'주문 기록 삭제',search:'검색',delivery_fee:'배송비',subtotal:'소계',grand_total:'총 합계',edit:'수정',apply:'적용',cancel:'취소'},
+    en:{admin_login:'Admin Login',username:'Username',password:'Password',login:'Login',logout:'Logout',sales_summary:'Sales Summary',total_orders:'Total Orders',items_sold:'Items Sold',gross_revenue:'Gross Revenue',distinct_products:'Distinct Products',delivery_total:'Delivery Total',products:'Products',show_hide_edit:'Show / Hide Edit',image_base64:'Image (Upload→Base64)',name:'Name',price:'Price (₩)',stock:'Stock',actions:'Actions',new_edit_product:'New / Edit Product',save:'Save',reset:'Reset',cart:'Cart',clear_cart:'Clear',checkout:'Checkout',cust_name:'Customer Name',cust_phone:'Phone',cust_date:'Date',status:'Status',paid:'Paid',unpaid:'Unpaid',cart_note:'Unlimited cart items. Click image to preview.',order_history:'Order History',order_id:'Order ID',date:'Date',customer:'Customer',items:'Items',total:'Total',clear_orders:'Clear Orders',search:'Search',delivery_fee:'Delivery Fee',subtotal:'Subtotal',grand_total:'Grand Total',edit:'Edit',apply:'Apply',cancel:'Cancel'}
+  };
+  function i18n(){
+    const d=T[S.lang]||T.en;
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const k=el.getAttribute('data-i18n'); if(d[k]) el.textContent=d[k];
+    });
+    q('#adminUser').placeholder='admin';
+    q('#adminPass').placeholder='admin123';
+    q('#fName').placeholder = S.lang==='km'?'ឧ. កាបូប':'AirPods Pro';
+    q('#fPrice').placeholder = '120000';
+    q('#fStock').placeholder = '10';
+    q('#orderSearch').placeholder = S.lang==='km'?'ស្វែងរក លេខបញ្ជាទិញ/ផលិតផល/អតិថិជន':'Order ID / Product / Customer';
+    q('#cartSearch').placeholder = S.lang==='km'?'ស្វែងរកក្នុងCart':'Search in cart';
+    q('#summaryUpdated').textContent = new Date().toLocaleString();
+  }
+
+  // ===== Background switch =====
+  const bgSel=q('#bgSelect'); bgSel.value=S.bg; applyBg();
+  function applyBg(){
+    document.body.classList.remove('bg-a','bg-b','bg-c','bg-d','bg-e');
+    document.body.classList.add(S.bg);
+  }
+  bgSel.addEventListener('change',e=>{ S.bg=e.target.value; console.log('Clicked Background Switch', S.bg); applyBg(); save(); });
+
+  // ===== Render Products =====
+  function renderProducts(){
+    const grid=q('#productGrid'); grid.innerHTML='';
+    const dict=T[S.lang]||T.en;
+    S.products.forEach(p=>{
+      const card=ce('div','p-3 border rounded-xl flex flex-col gap-2 bg-white/70');
+      card.innerHTML=`
+        <img src="${p.image||''}" alt="img" class="thumb" data-img="${p.image||''}">
+        <div class="font-semibold">${p.name}</div>
+        <div class="text-sm opacity-80">₩${KRW.format(p.price||0)}</div>
+        <div class="text-xs opacity-70">${dict.stock}: ${p.stock}</div>
+        <div class="flex gap-2">
+          <button class="btn btn-soft flex-1" data-edit="${p.id}">✏️ ${dict.edit}</button>
+          <button class="btn btn-primary flex-1" data-buy="${p.id}">🛒 Add</button>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  // ===== Render Cart =====
+  function renderCart(){
+    const box=q('#cartList'); box.innerHTML=''; let subtotal=0;
+    const term = (S.cartSearch||'').trim().toLowerCase();
+    S.cart
+      .filter(ci => !term || (ci.name.toLowerCase().includes(term)))
+      .forEach(ci=>{
+        const p=S.products.find(x=>x.id===ci.id); const max=p?p.stock:ci.qty; if(ci.qty>max) ci.qty=max;
+        const line=ci.qty*ci.price; subtotal+=line;
+        const row=ce('div','flex items-center gap-3');
+        row.innerHTML=`
+          <img src="${ci.image||''}" class="w-12 h-12 object-cover rounded-lg border" data-img="${ci.image||''}">
+          <div class="flex-1">
+            <div class="font-medium">${ci.name}</div>
+            <div class="text-sm opacity-70">₩${KRW.format(ci.price)}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn btn-soft px-3" data-dec="${ci.id}">−</button>
+            <input class="w-16 text-center px-2 py-2 rounded-xl border bg-transparent" value="${ci.qty}" data-qty="${ci.id}">
+            <button class="btn btn-soft px-3" data-inc="${ci.id}">+</button>
+          </div>
+          <div class="w-24 text-right">₩${KRW.format(line)}</div>
+          <button class="btn btn-danger" data-rem="${ci.id}">✕</button>`;
+        box.appendChild(row);
+      });
+    const del = parseInt(q('#deliveryFee').value||'0',10)||0;
+    q('#cartSubtotal').textContent = KRW.format(subtotal);
+    q('#cartDelivery').textContent = KRW.format(del);
+    q('#cartTotal').textContent = KRW.format(subtotal+del);
+    save();
+  }
+  function addToCart(id){
+    console.log("Clicked Add to Cart", id);
+    const p=S.products.find(x=>x.id===id); if(!p) return;
+    const item=S.cart.find(x=>x.id===id);
+    const remain=p.stock - (item?item.qty:0);
+    if(remain<=0) return alert('Out of stock');
+    if(item){ item.qty+=1; } else { S.cart.push({id, name:p.name, price:p.price, image:p.image, qty:1}); }
+    renderCart();
+  }
+
+  // ===== Orders (Search + Pagination + Edit total) =====
+  function filterOrders(){
+    const qy=S.search.trim().toLowerCase(); if(!qy) return S.orders;
+    return S.orders.filter(o =>
+      o.id.toLowerCase().includes(qy) ||
+      (o.items||[]).some(it=>it.name.toLowerCase().includes(qy)) ||
+      (o.customer?.toLowerCase()||'').includes(qy)
+    );
+  }
+  function renderOrders(){
+    const rows=q('#orderRows'); rows.innerHTML='';
+    const list=filterOrders(); const total=list.length; const size=S.pageSize; const pages=Math.max(1,Math.ceil(total/size));
+    if(S.currentPage>pages) S.currentPage=pages;
+    const start=(S.currentPage-1)*size; const pageItems=list.slice(start,start+size);
+    const dict=T[S.lang]||T.en;
+
+    pageItems.forEach(o=>{
+      const tr=document.createElement('tr');
+      const itemsTxt=(o.items||[]).map(it=>`${it.name} × ${it.qty}`).join(', ');
+      const tag = o.status==='paid'?`<span class="tag tag-paid" data-i18n="paid">${dict.paid}</span>`:`<span class="tag tag-unpaid" data-i18n="unpaid">${dict.unpaid}</span>`;
+      tr.innerHTML=`
+        <td class="py-2 pr-4">${o.id}</td>
+        <td class="py-2 pr-4">${new Date(o.date).toLocaleString()}</td>
+        <td class="py-2 pr-4">${o.customer||''}</td>
+        <td class="py-2 pr-4">${itemsTxt}</td>
+        <td class="py-2 pr-4">${tag}</td>
+        <td class="py-2 pr-4">₩${KRW.format(o.delivery||0)}</td>
+        <td class="py-2 pr-4">
+          <span class="font-semibold">₩${KRW.format(o.total)}</span>
+        </td>
+        <td class="py-2 pr-4">
+          <button class="btn btn-soft" data-editorder="${o.id}">✏️ ${dict.edit}</button>
+        </td>`;
+      rows.appendChild(tr);
+    });
+    q('#orderCountInfo').textContent=`${total} result(s) • Page ${S.currentPage}/${Math.max(1,Math.ceil(total/size))}`;
+
+    // pager
+    const pager=q('#pager'); pager.innerHTML='';
+    const mk=(label,dis,go)=>{const b=ce('button','btn btn-soft'); b.textContent=label; if(dis){b.disabled=true; b.classList.add('opacity-50');} else b.onclick=()=>{console.log("Clicked Page", label); S.currentPage=go; renderOrders();}; return b;};
+    const pagesCount=Math.max(1,Math.ceil(total/size));
+    pager.appendChild(mk('Prev', S.currentPage===1, S.currentPage-1));
+    const maxButtons=7; const arr=[...Array(pagesCount).keys()].map(i=>i+1);
+    let shown=[]; if(pagesCount<=maxButtons){shown=arr;} else {const cp=S.currentPage; const sp=Math.max(1,cp-2); const ep=Math.min(pagesCount, sp+maxButtons-3); shown=[1, ...arr.slice(sp-1,ep), pagesCount]; shown=[...new Set(shown)];}
+    shown.forEach(n=>{const b=mk(String(n),false,n); if(n===S.currentPage){b.classList.add('btn-primary'); b.classList.remove('btn-soft');} pager.appendChild(b);});
+    pager.appendChild(mk('Next', S.currentPage===pagesCount, S.currentPage+1));
+    i18n();
+  }
+
+  function refreshSummary(){
+    const orders=S.orders; const totalOrders=orders.length; let items=0; let gross=0; let delTotal=0; const set=new Set();
+    orders.forEach(o=>{ gross+=o.total; delTotal+=o.delivery||0; (o.items||[]).forEach(it=>{ items+=it.qty; set.add(it.id); }); });
+    q('#sumOrders').textContent=totalOrders; q('#sumItems').textContent=items; q('#sumGross').textContent='₩'+KRW.format(gross); q('#sumDelivery').textContent='₩'+KRW.format(delTotal); q('#sumSKUs').textContent=set.size; q('#summaryUpdated').textContent=new Date().toLocaleString();
+  }
+
+  // ===== Editor helpers =====
+  let editingId='';
+  function resetForm(){ q('#fName').value=''; q('#fPrice').value=''; q('#fStock').value=''; q('#fImage').value=''; q('#fImageFile').value=''; editingId=''; }
+  function upsertProduct(data){
+    const price=parseInt(data.price,10); const stock=parseInt(data.stock,10);
+    if(!(data.name&&data.name.trim())) return alert('Name required');
+    if(isNaN(price)||price<0) return alert('Invalid price');
+    if(isNaN(stock)||stock<0) return alert('Invalid stock');
+    if(!data.id){
+      data.id=Math.random().toString(36).slice(2,10);
+      S.products.push({id:data.id,name:data.name.trim(),price,stock,image:data.image||''});
+    }else{
+      const i=S.products.findIndex(x=>x.id===data.id); if(i>-1){
+        S.products[i]={...S.products[i],name:data.name.trim(),price,stock,image:data.image||S.products[i].image};
+      }
+    }
+    save(); renderProducts(); refreshSummary();
+  }
+
+  // ===== Event Wiring (with console.log) =====
+  // Product grid clicks (edit, buy, view image)
+  document.body.addEventListener('click',e=>{
+    const edit=e.target.closest('[data-edit]'); const buy=e.target.closest('[data-buy]'); const img=e.target.closest('[data-img]');
+    if(edit){ if(!S.admin) return alert('Admin only'); const id=edit.getAttribute('data-edit'); const p=S.products.find(x=>x.id===id); if(p){ console.log("Clicked Edit Product", id); editingId=p.id; q('#fName').value=p.name; q('#fPrice').value=p.price; q('#fStock').value=p.stock; q('#fImage').value=p.image||''; q('#editorCard').classList.remove('hidden'); window.scrollTo({top:q('#editorCard').offsetTop-12,behavior:'smooth'});} }
+    if(buy){ addToCart(buy.getAttribute('data-buy')); }
+    if(img){ const src=img.getAttribute('data-img'); if(src){ console.log("Clicked View Image"); const lb=q('#lightbox'); lb.style.display='flex'; lb.querySelector('img').src=src; } }
+  });
+
+  // Lightbox close
+  q('#lightbox').addEventListener('click',()=>{ console.log("Clicked Close Lightbox"); q('#lightbox').style.display='none'; });
+
+  // Toggle editor
+  q('#btnToggleEditor').addEventListener('click',()=>{ console.log("Clicked Show/Hide Editor"); if(!S.admin) return alert('Admin only'); q('#editorCard').classList.toggle('hidden'); });
+
+  // Image upload -> base64
+  q('#fImageFile').addEventListener('change',e=>{
+    console.log("Clicked Upload Photo (Editor)");
+    const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ q('#fImage').value=r.result; }; r.readAsDataURL(f);
+  });
+
+  // Save / Reset product
+  q('#btnSaveProduct').addEventListener('click',()=>{ console.log("Clicked Save Product"); if(!S.admin) return alert('Admin only'); upsertProduct({id:editingId,name:q('#fName').value,price:q('#fPrice').value,stock:q('#fStock').value,image:q('#fImage').value}); resetForm(); });
+  q('#btnResetForm').addEventListener('click',()=>{ console.log("Clicked Reset Product Form"); resetForm(); });
+
+  // Cart controls
+  q('#cartList').addEventListener('click',e=>{
+    const inc=e.target.closest('[data-inc]'); const dec=e.target.closest('[data-dec]'); const rem=e.target.closest('[data-rem]');
+    if(inc){ const it=S.cart.find(x=>x.id===inc.getAttribute('data-inc')); if(!it) return; const p=S.products.find(x=>x.id===it.id); if(it.qty<p.stock) it.qty++; console.log("Clicked Qty +", it.id); renderCart(); }
+    if(dec){ const it=S.cart.find(x=>x.id===dec.getAttribute('data-dec')); if(!it) return; if(it.qty>1) it.qty--; else S.cart=S.cart.filter(x=>x.id!==it.id); console.log("Clicked Qty -", it?.id); renderCart(); }
+    if(rem){ S.cart=S.cart.filter(x=>x.id!==rem.getAttribute('data-rem')); console.log("Clicked Remove From Cart"); renderCart(); }
+  });
+  q('#cartList').addEventListener('change',e=>{ const t=e.target; if(t.dataset.qty){ const it=S.cart.find(x=>x.id===t.dataset.qty); if(!it) return; let v=parseInt(t.value,10); if(isNaN(v)||v<1) v=1; const p=S.products.find(x=>x.id===it.id); if(v>p.stock) v=p.stock; it.qty=v; console.log("Changed Qty input", it.id, v); renderCart(); }});
+  q('#btnClearCart').addEventListener('click',()=>{ console.log("Clicked Clear Cart"); if(confirm('Clear cart?')){ S.cart=[]; renderCart(); save(); }});
+  q('#deliveryFee').addEventListener('input',()=>{ console.log("Typing Delivery Fee", q('#deliveryFee').value); renderCart(); });
+
+  // Cart Search buttons
+  q('#btnCartSearch').addEventListener('click',()=>{ S.cartSearch=q('#cartSearch').value||''; console.log('Clicked Cart Search', S.cartSearch); renderCart(); });
+  q('#btnCartSearchReset').addEventListener('click',()=>{ console.log('Clicked Cart Search Reset'); S.cartSearch=''; q('#cartSearch').value=''; renderCart(); });
+
+  // Checkout (validation + stock deduction + delivery + orders)
+  q('#btnCheckout').addEventListener('click',()=>{ 
+    console.log("Clicked Checkout");
+    if(S.cart.length===0) return alert('Cart empty');
+    for(const ci of S.cart){ const p=S.products.find(x=>x.id===ci.id); if(!p) return alert('Product missing'); if(ci.qty>p.stock) return alert('Stock not enough: '+p.name); }
+    let subtotal=0; const items=[]; S.cart.forEach(ci=>{ const p=S.products.find(x=>x.id===ci.id); p.stock-=ci.qty; subtotal+=ci.qty*p.price; items.push({id:p.id,name:p.name,qty:ci.qty,price:p.price}); });
+    const delivery = parseInt(q('#deliveryFee').value||'0',10)||0;
+    const total = subtotal + delivery;
+    const order={ id:'ORD-'+Date.now(), date:new Date().toISOString(), customer:q('#custName').value||'', phone:q('#custPhone').value||'', status:'paid', items, subtotal, delivery, total };
+    S.orders.unshift(order); S.cart=[]; q('#deliveryFee').value='0';
+    save(); renderProducts(); renderCart(); refreshSummary(); renderOrders(); alert('Order placed: '+order.id);
+  });
+
+  // Orders: edit total (admin only) + search/reset/clear
+  q('#orderRows').addEventListener('click',e=>{
+    const btn=e.target.closest('[data-editorder]'); if(!btn) return;
+    if(!S.admin) return alert('Admin only');
+    const id=btn.getAttribute('data-editorder'); const o=S.orders.find(x=>x.id===id); if(!o) return;
+    console.log('Clicked Edit Order Total', id);
+    const dict=T[S.lang]||T.en;
+    const newDelivery = prompt(`${dict.delivery_fee}`, String(o.delivery||0));
+    if(newDelivery===null) return;
+    const dFee = parseInt(newDelivery,10); if(isNaN(dFee)||dFee<0) return alert('Invalid delivery fee');
+    const newTotal = o.subtotal + dFee;
+    if(!confirm(`${dict.apply}? ₩${KRW.format(newTotal)}`)) return;
+    o.delivery = dFee; o.total = newTotal; save(); renderOrders(); refreshSummary();
+  });
+
+  q('#orderSearch').addEventListener('input',e=>{ S.search=e.target.value; S.currentPage=1; console.log("Typing Order Search", S.search); renderOrders(); });
+  q('#btnResetSearch').addEventListener('click',()=>{ console.log("Clicked Reset Search"); q('#orderSearch').value=''; S.search=''; S.currentPage=1; renderOrders(); });
+  q('#btnClearOrders').addEventListener('click',()=>{ console.log("Clicked Clear Orders"); if(!S.admin) return alert('Admin only'); if(confirm('Clear all orders?')){ S.orders=[]; save(); renderOrders(); refreshSummary(); }});
+
+  // Login / Logout
+  q('#btnLogin').addEventListener('click',()=>{ console.log("Clicked Login"); const u=q('#adminUser').value; const p=q('#adminPass').value; if(u==='admin' && p==='admin123'){ S.admin=true; save(); gate(); alert('Logged in as admin'); } else alert('Invalid credentials'); });
+  q('#btnLogout').addEventListener('click',()=>{ console.log("Clicked Logout"); S.admin=false; save(); gate(); });
+
+  // Language
+  const langSel=q('#langSelect'); langSel.value=S.lang;
+  langSel.addEventListener('change',e=>{ console.log("Clicked Language Switch", e.target.value); S.lang=e.target.value; save(); i18n(); renderProducts(); renderOrders(); });
+
+  // Gate sections
+  function gate(){ q('#adminBadge').classList.toggle('hidden',!S.admin); q('#loginSection').classList.toggle('hidden',S.admin); q('#btnLogout').classList.toggle('hidden',!S.admin); q('#editorCard').classList.add('hidden'); }
+
+  // Seed products if empty
+  if(S.products.length===0){
+    S.products=[
+      {id:Math.random().toString(36).slice(2,10), name:'កាបូបស្ត្រី', price:25500, stock:12, image:''},
+      {id:Math.random().toString(36).slice(2,10), name:'ទូរស័ព្ទ C1', price:199000, stock:5, image:''},
+      {id:Math.random().toString(36).slice(2,10), name:'កាដូរអំណោយ', price:5000, stock:100, image:''},
+    ];
+  }
+
+  // Click in product grid: add to cart also via Enter on quantity? (simple click only)
+
+  // Global click to view any image (product or cart)
+  document.body.addEventListener('click',e=>{
+    const img=e.target.closest('[data-img]');
+    if(img){ const src=img.getAttribute('data-img'); if(src){ console.log("Clicked View Image"); const lb=q('#lightbox'); lb.style.display='flex'; lb.querySelector('img').src=src; } }
+  });
+
+  // Init
+  function renderAll(){ i18n(); renderProducts(); renderCart(); renderOrders(); refreshSummary(); }
+  function init(){ console.log("App Init"); gate(); renderAll(); }
+  init();
+})();
+</script>
+</body>
+</html>
