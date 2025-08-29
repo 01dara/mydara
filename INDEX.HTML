@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ហាងលក់ទំនិញ | Demo</title>
+  <meta name="description" content="គំរូគេហទំព័រលក់ទំនិញ HTML ដុំឯកសារតែ១ មានកាត ស្វែងរក និងកែសម្រួល" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* (ដូចដើម) */
+    :root{--bg:#0f172a;--card:#111827;--muted:#64748b;--text:#e5e7eb;--brand:#22c55e;--brand-900:#064e3b;--accent:#38bdf8;--danger:#ef4444;--shadow:0 10px 25px rgba(0,0,0,.35);--radius:18px}
+    *{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:"Noto Sans Khmer",system-ui,sans-serif;background:var(--bg);color:var(--text)}a{color:inherit;text-decoration:none}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+    header{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.7);backdrop-filter:blur(12px);border-bottom:1px solid rgba(148,163,184,.15)}
+    .nav{display:flex;align-items:center;gap:16px;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:700}
+    .logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--accent));color:#001b0f;font-weight:900}
+    .tools{display:flex;gap:10px;align-items:center}
+    .search{display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid rgba(148,163,184,.22);padding:8px 12px;border-radius:12px;flex:1;min-width:220px}
+    .search input{background:transparent;border:none;outline:none;color:var(--text);width:100%}
+    .btn{border:none;cursor:pointer;border-radius:12px;padding:8px 12px;font-weight:600}
+    .btn-primary{background:var(--brand);color:#052e1a;box-shadow:var(--shadow)}
+    .btn-ghost{background:#0b1220;border:1px solid rgba(148,163,184,.22);color:var(--text)}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+    @media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.grid{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,rgba(2,6,23,.6),rgba(2,6,23,.25));border:1px solid rgba(148,163,184,.18);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+    .thumb img{width:100%;height:180px;object-fit:cover;display:block}
+    .content{padding:14px;display:flex;flex-direction:column;gap:8px}
+    .title{font-weight:600}
+    .muted{color:var(--muted);font-size:14px}
+    .price{font-weight:700}
+    .actions{display:flex;gap:8px;margin-top:auto;flex-wrap:wrap}
+    footer.site{margin-top:36px;padding:26px 0;border-top:1px solid rgba(148,163,184,.15);color:var(--muted)}
+    .editor{background:#0b1220;border:1px solid rgba(148,163,184,.25);padding:16px;border-radius:16px;margin-top:20px}
+    .editor input{width:100%;margin-bottom:8px;padding:8px;border-radius:8px;border:1px solid rgba(148,163,184,.25);background:#111827;color:var(--text)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand"><div class="logo">S</div><div><div style="font-size:18px">Shoply</div><div style="font-size:12px;color:var(--muted)">ហាងអនឡាញតូចៗ</div></div></div>
+      <div class="tools"><label class="search"><input id="search" placeholder="ស្វែងរកផលិតផល..."></label></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2>ផលិតផល</h2>
+    <section class="grid" id="grid"></section>
+
+    <div class="editor">
+      <h3>បន្ថែម/កែប្រែ ផលិតផល</h3>
+      <input id="pId" placeholder="ID (ទុកទទេសម្រាប់ថ្មី)">
+      <input id="pName" placeholder="ឈ្មោះ">
+      <input id="pPrice" placeholder="តម្លៃ" type="number" step="0.01">
+      <input id="pImg" placeholder="រូបភាព URL">
+      <input id="pTag" placeholder="Tag">
+      <button class="btn btn-primary" onclick="saveProduct()">💾 រក្សាទុក</button>
+    </div>
+
+    <footer class="site">© <span id="year"></span> Shoply</footer>
+  </main>
+
+  <script>
+    // Load products from localStorage or default
+    const DEFAULT_PRODUCTS=[
+      {id:1,name:"កាបូប Classic",price:39.9,tag:"fashion",img:"https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=1200&auto=format&fit=crop"},
+      {id:2,name:"ស្បែកជើង Runner",price:54.0,tag:"sport",img:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop"}
+    ];
+    let PRODUCTS=JSON.parse(localStorage.getItem('products')||'null')||DEFAULT_PRODUCTS;
+
+    const grid=document.getElementById('grid');
+    const search=document.getElementById('search');
+    const year=document.getElementById('year');
+    year.textContent=new Date().getFullYear();
+
+    function format(n){return '$'+n.toFixed(2)}
+    function persist(){localStorage.setItem('products',JSON.stringify(PRODUCTS))}
+
+    function renderGrid(){
+      const q=search.value.toLowerCase();
+      const list=PRODUCTS.filter(p=>p.name.toLowerCase().includes(q));
+      grid.innerHTML=list.map(p=>`
+        <article class="card">
+          <div class="thumb"><img src="${p.img}" alt="${p.name}"></div>
+          <div class="content">
+            <div class="title">${p.name}</div>
+            <div class="muted">Tag: ${p.tag}</div>
+            <div class="price">${format(p.price)}</div>
+            <div class="actions">
+              <button class="btn btn-ghost" onclick="editProduct(${p.id})">✏️ កែប្រែ</button>
+              <button class="btn btn-ghost" onclick="deleteProduct(${p.id})">🗑️ លុប</button>
+            </div>
+          </div>
+        </article>`).join('');
+    }
+
+    function saveProduct(){
+      const id=document.getElementById('pId').value;
+      const name=document.getElementById('pName').value;
+      const price=parseFloat(document.getElementById('pPrice').value||0);
+      const img=document.getElementById('pImg').value;
+      const tag=document.getElementById('pTag').value;
+      if(!name) return alert('សូមបញ្ចូលឈ្មោះ');
+
+      if(id){
+        const idx=PRODUCTS.findIndex(p=>p.id==id);
+        if(idx>-1){PRODUCTS[idx]={...PRODUCTS[idx],name,price,img,tag}} else {
+          PRODUCTS.push({id:parseInt(id),name,price,img,tag});
+        }
+      }else{
+        const newId=PRODUCTS.length?Math.max(...PRODUCTS.map(p=>p.id))+1:1;
+        PRODUCTS.push({id:newId,name,price,img,tag});
+      }
+      persist();
+      clearForm();
+      renderGrid();
+    }
+
+    function editProduct(id){
+      const p=PRODUCTS.find(x=>x.id===id);
+      if(!p) return;
+      document.getElementById('pId').value=p.id;
+      document.getElementById('pName').value=p.name;
+      document.getElementById('pPrice').value=p.price;
+      document.getElementById('pImg').value=p.img;
+      document.getElementById('pTag').value=p.tag;
+    }
+
+    function deleteProduct(id){
+      if(!confirm('លុបផលិតផលនេះ?')) return;
+      PRODUCTS=PRODUCTS.filter(p=>p.id!==id);
+      persist();
+      renderGrid();
+    }
+
+    function clearForm(){
+      document.getElementById('pId').value="";
+      document.getElementById('pName').value="";
+      document.getElementById('pPrice').value="";
+      document.getElementById('pImg').value="";
+      document.getElementById('pTag').value="";
+    }
+
+    search.addEventListener('input',renderGrid);
+    renderGrid();
+  </script>
+</body>
+</html>
